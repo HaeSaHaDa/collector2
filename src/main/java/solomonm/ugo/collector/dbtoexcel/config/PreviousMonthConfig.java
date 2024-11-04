@@ -26,7 +26,7 @@ public class PreviousMonthConfig {
 
     static {
         try {
-            now_5min = Instant.now().plus(Duration.ofMinutes(5));
+            now_5min = Instant.now().plus(Duration.ofSeconds(1));
             lastMonth = LocalDate.now().minusMonths(1);
             firstDay = lastMonth.with(TemporalAdjusters.firstDayOfMonth());
             lastDay = lastMonth.with(TemporalAdjusters.lastDayOfMonth());

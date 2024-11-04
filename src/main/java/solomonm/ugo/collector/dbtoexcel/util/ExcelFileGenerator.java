@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
@@ -14,15 +15,22 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 @Slf4j
 @Component
+@EnableScheduling
 public class ExcelFileGenerator {
-
+    private final ExceptionSender exceptionSender;
     @Autowired
     private TaskScheduler taskScheduler;
+
+    public ExcelFileGenerator(ExceptionSender exceptionSender) {
+        this.exceptionSender = exceptionSender;
+    }
 
     /**
      * Excel 파일의 헤더를 작성합니다.
@@ -109,6 +117,7 @@ public class ExcelFileGenerator {
      * @param data       데이터 리스트
      */
     public void generate_File(List<String> fileheader, String filePath, String month, List<ExcelColDTO> data, String extension) {
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath));
              Workbook workbook = "xlsx".equals(extension) ? new SXSSFWorkbook() : new HSSFWorkbook()) {
 
@@ -116,14 +125,15 @@ public class ExcelFileGenerator {
             createHeaderRow(fileheader, sheet, workbook);
             populateDataRows(sheet, month, data);
             workbook.write(fileOut);
-
+            log.info("{} 파일이 생성되었습니다. generate_File", extension);
+            log.info("------------------------------------------------------------> [ END ]");
         } catch (Exception e) {
             log.info("{} 파일 생성 중 오류가 발생하여 5분 뒤에 재시도 합니다.{}", extension, e.getMessage());
-            taskScheduler.schedule(() -> re_generate_File(fileheader, filePath, month, data, extension),
+            taskScheduler.schedule(()
+                            -> re_generate_File(fileheader, filePath, month, data, extension),
                     PreviousMonthConfig.now_5min);
+            log.info(PreviousMonthConfig.now_5min.toString());
         }
-
-        log.info("{} 파일이 생성되었습니다.", extension);
     }
 
     public void re_generate_File(List<String> fileheader, String filePath, String month, List<ExcelColDTO> data, String extension) {
@@ -137,13 +147,11 @@ public class ExcelFileGenerator {
             log.info("------------------------------------------------------------> [ END ]");
         } catch (IOException e) {
             log.info("{} 파일 생성 중 오류가 발생했습니다. {}", extension, e.getMessage());
-            throw new RuntimeException(e);
+            exceptionSender.sendExceptionAlert("IOException");
         } catch (IllegalArgumentException e) {
             log.warn("전달된 데이터가 유효하지 않습니다: {}", e.getMessage());
-            throw e; // 예외를 다시 던져 호출자에게 알림
+            exceptionSender.sendExceptionAlert("IllegalArgumentException");
         }
-
-        log.info("{} 파일이 생성되었습니다.", extension);
     }
 
     // 내부 클래스: ExcelCellStyle

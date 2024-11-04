@@ -14,7 +14,15 @@ filegen:
   filename: 연간월평균
   fileExtension: xls
   fileheader: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
-exceptionSender:
+exception_sender:
+  connector:
     url: http://192.168.0.111:14766/api/notifications
-    sender:
-    recipients:
+    max_retry_count: 3      # 최대 재시도 횟수
+    retry_delay_ms: 2000    # 재시도 대기 시간 (밀리초)
+    connection_timeout_ms: 5000  # 연결 타임아웃 시간 (밀리초)
+  message:
+    sender: sixthgkrsus@naver.com
+    recipients: sixthgkrsus@naver.com
+    title: 파일생성 에러
+    deliveryType: Telegram
+

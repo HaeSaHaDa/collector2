@@ -22,13 +22,13 @@ public class DBtoExcelMain implements ApplicationRunner {
     private final ExcelInfoService excelInfoService;
 
     @Value("${filegen.filepath}")
-    private String filepath;
+    String filepath;
     @Value("${filegen.filename}")
-    private String filename;
+    String filename;
     @Value("${filegen.fileExtension}")
-    private String fileExtension;
+    String fileExtension;
     @Value("${filegen.fileheader}")
-    private List<String> fileheader;
+    List<String> fileheader;
 
     public DBtoExcelMain(ExcelInfoService excelInfoService) {
         this.excelInfoService = excelInfoService;
@@ -68,6 +68,5 @@ public class DBtoExcelMain implements ApplicationRunner {
             log.warn("데이터가 존재하지 않습니다.");
         }
 
-        log.info("------------------------------------------------------------> [ END ]");
     }
 }
