@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="solomonm.ugo.collector.dbtoexcel.mapper.ExcelInfoMapper">
+    <select id="selectData" resultType="solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO">
+        <![CDATA[
+        SELECT
+            #{lastMonth_yyyyMM} AS month,
+            ROAD_NAME,
+            DIR_NAME,
+            ST_NAME,
+            ED_NAME,
+            DISTANCE,
+            AVG(CASE WHEN 요일 = '평일' THEN SPEED END) AS 평일평균,
+            AVG(CASE WHEN 요일 = '주말' THEN SPEED END) AS 주말평균,
+            AVG(SPEED) AS 전체평균
+        FROM (
+            SELECT
+                CASE
+                    WHEN I_D = '월' THEN '평일'
+                    WHEN I_D = '화' THEN '평일'
+                    WHEN I_D = '수' THEN '평일'
+                    WHEN I_D = '목' THEN '평일'
+                    WHEN I_D = '금' THEN '평일'
+                    WHEN I_D = '토' THEN '주말'
+                    WHEN I_D = '일' THEN '주말'
+                    ELSE NULL
+                END AS 요일,
+                AXIS_IDX,
+                ROAD_NAME,
+                DIR_NAME,
+                ST_NAME,
+                ED_NAME,
+                DISTANCE,
+                SPEED,
+                ROAD_IDX,
+                LINK_IDX
+            FROM TB_SEOCHO_RESULT
+            WHERE ROAD_NAME <> '<평균>'
+              AND ST_NAME <> '*'
+              AND I_DAY BETWEEN #{firstDay_yyyyMMdd} AND #{lastDay_yyyyMMdd}
+        ) AS subquery
+        GROUP BY
+            ROAD_NAME,
+            DIR_NAME,
+            ST_NAME,
+            ED_NAME,
+            DISTANCE,
+            ROAD_IDX,
+            LINK_IDX,
+            AXIS_IDX
+        ORDER BY
+            AXIS_IDX,
+            ROAD_NAME,
+            DIR_NAME DESC,
+            LINK_IDX;
+    ]]></select>
+</mapper>

@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: collector
+  datasource:
+    url: jdbc:mariadb://localhost:3306/test_collect
+    username: collector
+    password: 6382
+    driver-class-name: org.mariadb.jdbc.Driver
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+#  file config(filepath: 저장경로 / filename: 파일명 / fileExtension: 파일 확장자)
+filegen:
+  filepath: D:\myProject\SolomonPj
+  filename: 연간월평균
+  fileExtension: xls
+  fileheader: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
+exceptionSender:
+    url: http://192.168.0.111:14766/api/notifications
+    sender:
+    recipients:
