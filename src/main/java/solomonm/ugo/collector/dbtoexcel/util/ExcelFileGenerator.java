@@ -147,10 +147,12 @@ public class ExcelFileGenerator {
             log.info("------------------------------------------------------------> [ END ]");
         } catch (IOException e) {
             log.info("{} 파일 생성 중 오류가 발생했습니다. {}", extension, e.getMessage());
-            exceptionSender.sendExceptionAlert("IOException");
+            String ioException = e.getMessage().substring(0, Math.min(100, e.getMessage().length()));
+            exceptionSender.sendExceptionAlert(ioException);
         } catch (IllegalArgumentException e) {
             log.warn("전달된 데이터가 유효하지 않습니다: {}", e.getMessage());
-            exceptionSender.sendExceptionAlert("IllegalArgumentException");
+            String IllegalArgumentException = e.getMessage().substring(0, Math.min(100, e.getMessage().length()));
+            exceptionSender.sendExceptionAlert(IllegalArgumentException);
         }
     }
 

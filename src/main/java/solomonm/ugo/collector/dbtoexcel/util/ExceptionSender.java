@@ -19,26 +19,33 @@ import java.nio.charset.StandardCharsets;
 class ExceptionSender {
     @Value("${exception_sender.connector.url}")
     private String exceptionUrl;
+
     @Value("${exception_sender.connector.max_retry_count}")
-    private int max_retry_count;
+    private int maxRetryCount;
+
     @Value("${exception_sender.connector.retry_delay_ms}")
-    private int retry_delay_ms;
+    private int retryDelayMs;
+
     @Value("${exception_sender.connector.connection_timeout_ms}")
-    private int connection_timeout_ms;
+    private int connectionTimeoutMs;
+
     @Value("${exception_sender.message.sender}")
     private String sender;
+
     @Value("${exception_sender.message.recipients}")
     private String[] recipients;
+
     @Value("${exception_sender.message.title}")
     private String title;
+
     @Value("${exception_sender.message.deliveryType}")
     private String deliveryType;
 
     /**
-     * JSON 형식의 메시지 문자열 생성
+     * 예외 알림 메시지 JSON 생성
      */
-    private String createJsonMessage(String sender, String[] recipients, String title, String content, String deliveryType) {
-        String recipientsJsonArray = String.format("[\"%s\"]", String.join("\", \"", recipients));
+    private String createJsonMessage(String content) {
+        String recipientsJson = String.format("[\"%s\"]", String.join("\", \"", recipients));
         return String.format(
                 "{" +
                         "\"sender\": \"%s\", " +
@@ -47,92 +54,76 @@ class ExceptionSender {
                         "\"content\": \"%s\", " +
                         "\"deliveryType\": \"%s\" " +
                         "}",
-                sender, recipientsJsonArray, title, content, deliveryType
+                sender, recipientsJson, title, content, deliveryType
         );
     }
 
     /**
-     * HttpURLConnection 객체를 재시도하며 생성하는 메서드
+     * 서버와의 연결 시도 및 응답 코드 확인
      */
-    private HttpURLConnection retryConnection() {
-        int attempt = 0;
-
-        while (attempt < max_retry_count) {
+    private HttpURLConnection attemptConnection() {
+        for (int attempt = 1; attempt <= maxRetryCount; attempt++) {
             try {
-                attempt++;
-                HttpURLConnection connection = createConnection();
-                if (connection != null) {
-                    // 서버 응답 코드 확인
-                    int responseCode = connection.getResponseCode();
-                    if (responseCode >= 200 && responseCode < 300) {
-                        log.info("Connection success with response code: " + responseCode);
-                        return connection; // 성공적으로 연결을 생성한 경우 반환
-                    } else {
-                        log.warn("Connection failed with response code: " + responseCode);
-                    }
+                HttpURLConnection connection = openConnection();
+                if (connection != null && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
+                    log.info("Connection success with response code: {}", connection.getResponseCode());
+                    return connection;
                 }
             } catch (IOException e) {
-                System.err.println("Connection attempt " + attempt + " failed: " + e.getMessage());
-            }
-
-            // 재시도 전에 일정 시간 대기
-            try {
-                Thread.sleep(retry_delay_ms);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.err.println("Retry interrupted: " + e.getMessage());
-                break; // 인터럽트 발생 시 재시도 중지
+                log.warn("Attempt {} failed: {}", attempt, e.getMessage());
+                delayRetry();
             }
         }
-
-        System.err.println("All connection attempts failed after " + max_retry_count + " retries.");
-        return null; // 모든 재시도가 실패한 경우 null 반환
+        log.error("All connection attempts failed after {} retries.", maxRetryCount);
+        return null;
     }
-
 
     /**
      * HttpURLConnection 객체 생성 및 설정
      */
-    private HttpURLConnection createConnection() throws IOException {
+    private HttpURLConnection openConnection() throws IOException {
+        URL url = new URL(exceptionUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setConnectTimeout(connectionTimeoutMs);
+        return connection;
+    }
+
+    /**
+     * 재시도 대기
+     */
+    private void delayRetry() {
         try {
-            URL url = new URL(exceptionUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setConnectTimeout(connection_timeout_ms); // 연결 타임아웃 설정
-            return connection;
-        } catch (IOException e) {
-            System.err.println("Failed to create HTTP connection: " + e.getMessage());
-            return null; // 예외 발생 시 null 반환 또는 별도 처리 로직
+            Thread.sleep(retryDelayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("Retry interrupted: {}", e.getMessage());
         }
     }
 
     /**
-     * JSON 메시지를 전송하는 메서드
+     * JSON 메시지 전송
      */
-    private void sendJsonMessage(HttpURLConnection connection, String jsonMessage){
+    private void sendJsonMessage(HttpURLConnection connection, String jsonMessage) {
         if (connection == null) {
-            System.err.println("Connection is null. Cannot send JSON message.");
+            log.warn("Connection is null. Cannot send JSON message.");
             return;
         }
 
         try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = jsonMessage.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
+            os.write(jsonMessage.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            System.err.println("Failed to send JSON message: " + e.getMessage());
+            log.error("Failed to send JSON message: {}", e.getMessage());
         }
     }
 
     /**
-     * 서버로부터 응답을 받아 반환하는 메서드
+     * 서버 응답 수신
      */
-    private String receiveResponse(HttpURLConnection connection) {
-        if (connection == null) {
-            System.err.println("Connection is null. Cannot receive response.");
-            return "";
-        }
+    private String getResponse(HttpURLConnection connection) {
+        if (connection == null) return "";
 
         StringBuilder response = new StringBuilder();
         try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
@@ -141,25 +132,21 @@ class ExceptionSender {
                 response.append(inputLine);
             }
         } catch (IOException e) {
-            System.out.println("Failed to receive response: " + e.getMessage());
+            log.error("Failed to receive response: {}", e.getMessage());
         }
-
         return response.toString();
     }
 
     /**
-     * 예외 발생 시 메세지 서버로 알림 전송
+     * 예외 발생 시 알림 전송
      */
     public void sendExceptionAlert(String content) {
-        System.out.println("this is sparta");
-        HttpURLConnection connection = retryConnection();
-        String jsonMessage = createJsonMessage(sender, recipients, title, content, deliveryType);
+        log.info("알림 전송을 시작합니다.");
+        HttpURLConnection connection = attemptConnection();
+        String jsonMessage = createJsonMessage(content.substring(0, Math.min(100, content.length())));
 
         sendJsonMessage(connection, jsonMessage);
-        String response = receiveResponse(connection);
-
-        System.out.println("Response from server: " + response);
-
+        String response = getResponse(connection);
+        log.info("Server response: {}", response.isEmpty() ? "없음" : response);
     }
-
 }
