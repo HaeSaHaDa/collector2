@@ -1,4 +1,4 @@
-package solomonm.ugo.collector.dbtoexcel.main;
+package solomonm.ugo.collector.dbtoexcel.controller;
 
 
 import lombok.extern.slf4j.Slf4j;
