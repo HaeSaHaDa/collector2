@@ -9,6 +9,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
+import solomonm.ugo.collector.dbtoexcel.controller.ExceptionMsgController;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
@@ -24,11 +25,11 @@ import java.util.stream.IntStream;
 @Component
 @EnableScheduling
 public class ExcelFileGenerator {
-    private final ExceptionSender exceptionSender;
+    private final ExceptionMsgController exceptionSender;
     @Autowired
     private TaskScheduler taskScheduler;
 
-    public ExcelFileGenerator(ExceptionSender exceptionSender) {
+    public ExcelFileGenerator(ExceptionMsgController exceptionSender) {
         this.exceptionSender = exceptionSender;
     }
 
@@ -148,11 +149,11 @@ public class ExcelFileGenerator {
         } catch (IOException e) {
             log.info("{} 파일 생성 중 오류가 발생했습니다. {}", extension, e.getMessage());
             String ioException = e.getMessage().substring(0, Math.min(100, e.getMessage().length()));
-            exceptionSender.sendExceptionAlert(ioException);
+            exceptionSender.exceptionSender(ioException);
         } catch (IllegalArgumentException e) {
             log.warn("전달된 데이터가 유효하지 않습니다: {}", e.getMessage());
             String IllegalArgumentException = e.getMessage().substring(0, Math.min(100, e.getMessage().length()));
-            exceptionSender.sendExceptionAlert(IllegalArgumentException);
+            exceptionSender.exceptionSender(IllegalArgumentException);
         }
     }
 

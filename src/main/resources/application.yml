@@ -22,7 +22,7 @@ exception_sender:
     connection_timeout_ms: 5000  # 연결 타임아웃 시간 (밀리초)
   message:
     sender: sixthgkrsus@naver.com
-    recipients: sixthgkrsus@naver.com
+    recipients: -1002166045687
     title: 파일생성 에러
-    deliveryType: Telegram
+    deliveryType: TELEGRAM
 

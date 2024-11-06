@@ -64,11 +64,8 @@ class ExceptionSender {
     private HttpURLConnection attemptConnection() {
         for (int attempt = 1; attempt <= maxRetryCount; attempt++) {
             try {
-                HttpURLConnection connection = openConnection();
-                if (connection != null && connection.getResponseCode() >= 200 && connection.getResponseCode() < 300) {
-                    log.info("Connection success with response code: {}", connection.getResponseCode());
-                    return connection;
-                }
+                return openConnection();
+
             } catch (IOException e) {
                 log.warn("Attempt {} failed: {}", attempt, e.getMessage());
                 delayRetry();
@@ -82,12 +79,15 @@ class ExceptionSender {
      * HttpURLConnection 객체 생성 및 설정
      */
     private HttpURLConnection openConnection() throws IOException {
+        System.out.println(" 커넥션 start");
         URL url = new URL(exceptionUrl);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setConnectTimeout(connectionTimeoutMs);
+
+        System.out.println(connection);
         return connection;
     }
 
@@ -114,6 +114,7 @@ class ExceptionSender {
 
         try (OutputStream os = connection.getOutputStream()) {
             os.write(jsonMessage.getBytes(StandardCharsets.UTF_8));
+            os.flush();
         } catch (IOException e) {
             log.error("Failed to send JSON message: {}", e.getMessage());
         }
@@ -143,7 +144,10 @@ class ExceptionSender {
     public void sendExceptionAlert(String content) {
         log.info("알림 전송을 시작합니다.");
         HttpURLConnection connection = attemptConnection();
+        log.error("connected");
+
         String jsonMessage = createJsonMessage(content.substring(0, Math.min(100, content.length())));
+        log.info("제이슨" + jsonMessage);
 
         sendJsonMessage(connection, jsonMessage);
         String response = getResponse(connection);
