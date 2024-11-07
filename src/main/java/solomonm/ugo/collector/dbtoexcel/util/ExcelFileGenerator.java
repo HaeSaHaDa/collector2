@@ -97,7 +97,8 @@ public class ExcelFileGenerator {
                 );
                 log.info("다음 재시도 시각: {}", PreviousMonthConfig.now_5min);
             } else {
-                exceptionSender.exceptionSender(fileName, e.getMessage());
+                String title = fileName + " 파일 생성 실패";
+                exceptionSender.exceptionSender(title, e.getMessage());
             }
 
         }
