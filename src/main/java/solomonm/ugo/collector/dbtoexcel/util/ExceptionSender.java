@@ -18,7 +18,7 @@ import java.util.List;
 @Slf4j
 @Component
 @PropertySource(value = "classpath:application.yml", encoding = "UTF-8")
-class ExceptionSender {
+public class ExceptionSender {
     private final ObjectMapper objectMapper;
 
     @Value("${exception-sender.connector.url}")
