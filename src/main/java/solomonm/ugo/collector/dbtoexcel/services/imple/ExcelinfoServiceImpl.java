@@ -47,7 +47,7 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
     @Override
     public void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String extension) {
         try {
-            excelFileGenerator.generate_File(
+            excelFileGenerator.generateFile(
                     fileheader,
                     filePath,
                     PreviousMonthConfig.lastMonth_yyyyMM,

@@ -21,8 +21,8 @@ exception_sender:
     retry_delay_ms: 2000    # 재시도 대기 시간 (밀리초)
     connection_timeout_ms: 5000  # 연결 타임아웃 시간 (밀리초)
   message:
-    sender: sixthgkrsus@naver.com
+    sender: solomonm3@solomonm.co.kr
     recipients: -1002166045687
     title: 파일생성 에러
-    deliveryType: TELEGRAM
+    deliveryType: TELEGRAM  # TELEGRAM,EMAIL
 
