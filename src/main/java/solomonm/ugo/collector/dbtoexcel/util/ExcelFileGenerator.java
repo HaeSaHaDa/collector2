@@ -13,7 +13,6 @@ import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
