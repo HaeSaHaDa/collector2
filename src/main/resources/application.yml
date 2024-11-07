@@ -8,21 +8,20 @@ spring:
     driver-class-name: org.mariadb.jdbc.Driver
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
-#  file config(filepath: 저장경로 / filename: 파일명 / fileExtension: 파일 확장자)
+#  file config(filepath: 저장경로 / filename: 파일명 / fileExtension: 파일 확장자 / fileheader: 엑셀 문서 헤더)
 filegen:
-  filepath: D:\myProject\SolomonPj
-  filename: 연간월평균
-  fileExtension: xls
-  fileheader: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
-exception_sender:
+  #  filepath: D:\myProject\SolomonPj
+  file-path: C:\Users\sixth\Desktop\test
+  file-name: 연간월평균
+  file-extension: xls
+  file-header: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
+exception-sender:
   connector:
     url: http://192.168.0.111:14766/api/notifications
-    max_retry_count: 3      # 최대 재시도 횟수
-    retry_delay_ms: 2000    # 재시도 대기 시간 (밀리초)
-    connection_timeout_ms: 5000  # 연결 타임아웃 시간 (밀리초)
+    max-retry-count: 3      # 최대 재시도 횟수
+    retry-delay-ms: 2000    # 재시도 대기 시간 (밀리초)
+    connection-timeout-ms: 5000  # 연결 타임아웃 시간 (밀리초)
   message:
     sender: solomonm3@solomonm.co.kr
     recipients: -1002166045687
-    title: 파일생성 에러
-    deliveryType: TELEGRAM  # TELEGRAM,EMAIL
-
+    delivery-type: TELEGRAM  # TELEGRAM,EMAIL

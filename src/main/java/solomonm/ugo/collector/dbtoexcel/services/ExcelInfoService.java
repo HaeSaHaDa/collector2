@@ -8,6 +8,6 @@ public interface ExcelInfoService {
 
     List<ExcelColDTO> selectData();
 
-    void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String extension);
+    void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileNmae, String extension);
 
 }

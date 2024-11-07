@@ -2,7 +2,6 @@ package solomonm.ugo.collector.dbtoexcel.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -20,118 +19,101 @@ import java.util.List;
 @Component
 @PropertySource(value = "classpath:application.yml", encoding = "UTF-8")
 class ExceptionSender {
-    @Autowired
-    ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    // Properties from application.yml file
-    @Value("${exception_sender.connector.url}")
+    @Value("${exception-sender.connector.url}")
     private String exceptionUrl;
-    @Value("${exception_sender.connector.max_retry_count}")
+    @Value("${exception-sender.connector.max-retry-count}")
     private int maxRetryCount;
-    @Value("${exception_sender.connector.retry_delay_ms}")
+    @Value("${exception-sender.connector.retry-delay-ms}")
     private int retryDelayMs;
-    @Value("${exception_sender.connector.connection_timeout_ms}")
+    @Value("${exception-sender.connector.connection-timeout-ms}")
     private int connectionTimeoutMs;
-    @Value("${exception_sender.message.sender}")
+    @Value("${exception-sender.message.sender}")
     private String sender;
-    @Value("${exception_sender.message.recipients}")
+    @Value("${exception-sender.message.recipients}")
     private List<Object> recipients;
-    @Value("${exception_sender.message.title}")
-    private String title;
-    @Value("${exception_sender.message.deliveryType}")
+    @Value("${exception-sender.message.delivery-type}")
     private String deliveryType;
 
-    /**
-     * 예외 메시지를 JSON 형식으로 변환하는 메서드입니다.
-     * MailDTO 객체를 생성하고, 이를 JSON 문자열로 직렬화하여 반환합니다.
-     * 직렬화 과정에서 예외가 발생하면 오류 로그를 남기고 null을 반환합니다.
-     *
-     * @param content 예외 메시지 내용
-     * @return JSON 형식의 메시지 문자열, 변환 실패 시 null 반환
-     */
-    private String createJsonMessage(String content) {
-        String jsonInputString = null;
-        try {
-            // MailDTO 객체를 생성하고 예외 메시지 내용을 설정
-            MailDTO mailDTO = MailDTO.builder()
-                    .sender(sender)
-                    .recipients(recipients)
-                    .title(title)
-                    .content(content)
-                    .deliveryType(deliveryType)
-                    .build();
-
-            // MailDTO 객체를 JSON 형식의 문자열로 직렬화
-            jsonInputString = objectMapper.writeValueAsString(mailDTO);
-
-        } catch (Exception e) {
-            log.error("Json Try Fail: {}", e.getMessage());
-        }
-        return jsonInputString;
+    ExceptionSender(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
 
 
     /**
-     * 지정된 URL로 예외 메시지를 JSON 형식으로 전송하는 메서드입니다.
-     * 실패 시 재시도하며, 최대 재시도 횟수만큼 시도합니다.
-     * 메시지가 성공적으로 전송되면(HTTP 200 응답 코드) 서버 응답을 로그에 기록합니다.
-     * 모든 재시도가 실패할 경우 오류 로그를 남깁니다.
+     * 예외 메시지를 JSON 형식으로 변환하고 지정된 URL로 전송합니다.
+     * 실패 시 지정된 횟수만큼 재시도합니다.
      *
      * @param content 전송할 예외 메시지 내용
      */
-    public void exceptionSender(String content) {
-        String jsonInputString = createJsonMessage(content);  // Convert the message to JSON format
-        log.info("JSON Payload: \n{}", jsonInputString);
+    public void exceptionSender(String title, String content) {
+        try {
+            // MailDTO 생성 및 JSON 직렬화
+            String jsonInputString = objectMapper.writeValueAsString(
+                    MailDTO.builder()
+                            .sender(sender)
+                            .recipients(recipients)
+                            .title(title)
+                            .content(content)
+                            .deliveryType(deliveryType)
+                            .build()
+            );
 
-        int responseCode = 0;
-        String responseString = null;
+            log.info("JSON Payload: \n{}", jsonInputString);
 
-        // 최대 재시도 횟수만큼 시도
-        for (int attempt = 1; attempt <= maxRetryCount; attempt++) {
-            try {
-                // URL 및 HTTP 연결 설정
-                URL url = new URL(exceptionUrl);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setDoOutput(true);  // Enable output to send data in request body
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setConnectTimeout(connectionTimeoutMs);
-
-                // JSON 데이터를 요청 본문에 작성
-                try (OutputStream os = connection.getOutputStream()) {
-                    os.write(jsonInputString.getBytes(StandardCharsets.UTF_8));
-                    os.flush();
-                }
-
-                // 응답 코드 확인
-                responseCode = connection.getResponseCode();
-
-                // 응답이 성공적이면 로그를 기록하고 메서드를 종료
-                if (responseCode == HttpURLConnection.HTTP_OK) {
+            // 최대 재시도 횟수만큼 전송 시도
+            for (int attempt = 1; attempt <= maxRetryCount; attempt++) {
+                if (sendMessage(jsonInputString)) {
                     log.info("Message sent successfully on attempt {}", attempt);
-
-                    // 응답 본문을 읽고 로그에 출력
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                        StringBuilder response = new StringBuilder();
-                        String inputLine;
-                        while ((inputLine = in.readLine()) != null) {
-                            response.append(inputLine);
-                        }
-                        responseString = response.toString();
-                    }
-                    log.info("Response: {}", responseString);
-                    return;  // 성공적인 전송 후 메서드를 종료
-                } else {
-                    log.warn("Attempt {} failed with response code: {}. Retrying...", attempt, responseCode);
-                    Thread.sleep(retryDelayMs);  // 재시도 전에 대기
+                    return;
                 }
-
-            } catch (Exception e) {
-                log.warn("Attempt {} failed: {}", attempt, e.getMessage());
-                // 재시도 실패 시 대기 후 재시도
+                log.warn("Attempt {} failed. Retrying in {} ms...", attempt, retryDelayMs);
+                Thread.sleep(retryDelayMs);  // 재시도 전 대기
             }
+
+            log.error("All attempts to send message failed after {} retries.", maxRetryCount);
+        } catch (Exception e) {
+            log.error("Failed to create JSON message or send request: {}", e.getMessage());
         }
-        // 모든 재시도가 실패한 경우 로그에 오류 기록
-        log.error("All attempts to send message failed after {} retries.", maxRetryCount);
+    }
+
+    /**
+     * JSON 메시지를 지정된 URL로 전송하는 메서드입니다.
+     *
+     * @param jsonInputString 전송할 JSON 형식 메시지
+     * @return 성공 여부
+     */
+    private boolean sendMessage(String jsonInputString) {
+        try {
+            URL url = new URL(exceptionUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setConnectTimeout(connectionTimeoutMs);
+
+            try (OutputStream os = connection.getOutputStream()) {
+                os.write(jsonInputString.getBytes(StandardCharsets.UTF_8));
+                os.flush();
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode < 300) {
+                log.info("Response Code: {}", responseCode);
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    log.info("Response: {}", response.toString());
+                }
+                return true;  // 성공적으로 전송됨
+            }
+        } catch (Exception e) {
+            log.warn("Send attempt failed: {}", e.getMessage());
+        }
+        return false;
     }
 }

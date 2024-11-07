@@ -45,11 +45,12 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
      */
     @Transactional
     @Override
-    public void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String extension) {
+    public void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileName, String extension) {
         try {
             excelFileGenerator.generateFile(
                     fileheader,
                     filePath,
+                    fileName,
                     PreviousMonthConfig.lastMonth_yyyyMM,
                     dbData,
                     extension

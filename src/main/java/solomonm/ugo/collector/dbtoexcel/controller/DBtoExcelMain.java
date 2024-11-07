@@ -21,13 +21,13 @@ public class DBtoExcelMain implements ApplicationRunner {
 
     private final ExcelInfoService excelInfoService;
 
-    @Value("${filegen.filepath}")
+    @Value("${filegen.file-path}")
     String filepath;
-    @Value("${filegen.filename}")
+    @Value("${filegen.file-name}")
     String filename;
-    @Value("${filegen.fileExtension}")
+    @Value("${filegen.file-extension}")
     String fileExtension;
-    @Value("${filegen.fileheader}")
+    @Value("${filegen.file-header}")
     List<String> fileheader;
 
     public DBtoExcelMain(ExcelInfoService excelInfoService) {
@@ -58,12 +58,15 @@ public class DBtoExcelMain implements ApplicationRunner {
         log.info("---------------------------------------------------------> [ START ]");
 
         String filePath = prepareFilePath();
+        String fileName = filename + PreviousMonthConfig.lastMonth_MM + "월." + fileExtension;
+        
+        log.info(fileName + "이세요");
 
         List<ExcelColDTO> dbData;
         dbData = excelInfoService.selectData();
 
         if (validateData(dbData)) {
-            excelInfoService.fileMake(fileheader, dbData, filePath, fileExtension);
+            excelInfoService.fileMake(fileheader, dbData, filePath, fileName, fileExtension);
         }else{
             log.warn("데이터가 존재하지 않습니다.");
         }

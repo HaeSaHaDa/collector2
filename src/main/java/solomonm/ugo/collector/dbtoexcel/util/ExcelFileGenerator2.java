@@ -4,189 +4,148 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 @Slf4j
 @Component
+@EnableScheduling
 public class ExcelFileGenerator2 {
+    private final ExceptionSender exceptionSender;
+    private final TaskScheduler taskScheduler;
+    private boolean retry = true; // 재시도 플래그를 처음에는 true로 설정
+    private CellStyle style;
 
-    /**
-     * Excel 파일의 헤더를 작성합니다.
-     *
-     * @param fileheader 파일 헤더 리스트
-     * @param sheet      생성할 시트
-     * @param workbook   워크북
-     */
-    private void createHeaderRow(List<String> fileheader, Sheet sheet, Workbook workbook) {
-        Row headerRow = sheet.createRow(0);
-        CellStyle cellStyle = createHeaderCellStyle(workbook);
-        String header0 = "'" + PreviousMonthConfig.lastMonth_yyyyMM + "'";
-
-        // 첫 번째 셀에 이전 달 정보 추가
-        Cell cell0 = headerRow.createCell(0);
-        cell0.setCellValue(header0);
-        cell0.setCellStyle(cellStyle);
-
-        // 나머지 헤더 셀 추가
-        for (int i = 0; i < fileheader.size(); i++) {
-            Cell cell = headerRow.createCell(i + 1);
-            cell.setCellValue(fileheader.get(i));
-            cell.setCellStyle(cellStyle);
-        }
+    public ExcelFileGenerator2(ExceptionSender exceptionSender, TaskScheduler taskScheduler) {
+        this.exceptionSender = exceptionSender;
+        this.taskScheduler = taskScheduler;
     }
 
-    /**
-     * Excel 데이터 영역에 값을 입력합니다.
-     *
-     * @param sheet  생성할 시트
-     * @param month  월 정보
-     * @param dbData 데이터 리스트
-     */
-    private void populateDataRows(Sheet sheet, String month, List<ExcelColDTO> dbData) {
-        final AtomicInteger rowIndex = new AtomicInteger(1);
-        CellStyle borderedStyle = createBorderedCellStyle(sheet.getWorkbook()); // 셀 스타일 생성
-
-        IntStream.range(0, dbData.size()).forEach(i -> {
-            ExcelColDTO dto = dbData.get(i);
-            Row row = sheet.createRow(rowIndex.getAndIncrement());
-
-            // 각 셀에 값 설정 및 테두리 스타일 적용
-            setCellValueWithBorder(row.createCell(0), month, borderedStyle);
-            setCellValueWithBorder(row.createCell(1), dto.getRoad_name(), borderedStyle);
-            setCellValueWithBorder(row.createCell(2), dto.getDir_name(), borderedStyle);
-            setCellValueWithBorder(row.createCell(3), dto.getSt_name(), borderedStyle);
-            setCellValueWithBorder(row.createCell(4), dto.getEd_name(), borderedStyle);
-            setCellValueWithBorder(row.createCell(5), dto.getDistance(), borderedStyle);
-            setCellValueWithBorder(row.createCell(6), dto.getWeekDay_avg(), borderedStyle);
-            setCellValueWithBorder(row.createCell(7), dto.getWeekEnd_avg(), borderedStyle);
-            setCellValueWithBorder(row.createCell(8), dto.getAll_avg(), borderedStyle);
-        });
-    }
 
     /**
      * 셀에 값을 설정하고 테두리 스타일을 적용합니다.
      *
-     * @param cell      설정할 셀
-     * @param value     셀에 설정할 값
-     * @param cellStyle 적용할 셀 스타일
+     * @param workbook 엑셀 워크북 인스턴스
+     * @param cell     값과 스타일을 설정할 셀
+     * @param value    셀에 설정할 값 (Number 또는 String)
+     * @param isHeader true면 헤더 스타일을 적용하고, false면 기본 스타일을 적용
      */
-    private void setCellValueWithBorder(Cell cell, Object value, CellStyle cellStyle) {
-        setCellValue(cell, value); // 값 설정
-        cell.setCellStyle(cellStyle); // 스타일 적용
-    }
-
-    /**
-     * 셀에 값을 설정합니다.
-     *
-     * @param cell  설정할 셀
-     * @param value 설정할 값
-     */
-    private void setCellValue(Cell cell, Object value) {
+    private void setCellValueWithBorder(
+            Workbook workbook,
+            Cell cell,
+            Object value,
+            boolean isHeader
+    ) {
+        // 셀에 값을 설정
         if (value != null) {
             if (value instanceof Number) {
-                cell.setCellValue(((Number) value).doubleValue());
+                cell.setCellValue(((Number) value).doubleValue()); // 숫자 타입이면 숫자 값으로 설정
             } else {
-                cell.setCellValue(value.toString());
+                cell.setCellValue(value.toString()); // 문자열로 변환 후 설정
             }
         } else {
-            cell.setBlank();
+            cell.setBlank(); // 값이 null이면 빈 셀로 설정
         }
+
+        // 셀 스타일 생성
+        style = workbook.createCellStyle();
+
+        if (isHeader) {
+            // 헤더 스타일 지정 (굵은 Arial 폰트, 폰트 크기 10)
+            Font boldFont = workbook.createFont();
+            boldFont.setBold(true);
+            boldFont.setFontName("Arial");
+            boldFont.setFontHeightInPoints((short) 10);
+            style.setFont(boldFont);
+        }
+        // 테두리 스타일 적용
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        // 스타일을 셀에 적용
+        cell.setCellStyle(style);
     }
 
-    /**
-     * 테두리가 있는 셀 스타일을 생성합니다.
-     *
-     * @param workbook 워크북
-     * @return 테두리 스타일이 적용된 셀 스타일
-     */
-    private CellStyle createBorderedCellStyle(Workbook workbook) {
-        CellStyle cellStyle = workbook.createCellStyle();
-        cellStyle.setBorderTop(BorderStyle.THIN);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setBorderLeft(BorderStyle.THIN);
-        cellStyle.setBorderRight(BorderStyle.THIN);
-        return cellStyle;
-    }
 
     /**
-     * 헤더 셀 스타일을 생성합니다.
+     * 주어진 데이터를 기반으로 Excel 파일을 생성하는 메서드입니다. 실패 시 다시 한 번 재시도한 후 생성히 불가능하면 exception에 대해 메일을 발송합니다.
      *
-     * @param workbook 워크북
-     * @return 헤더 셀 스타일
+     * @param fileHeader Excel 파일의 헤더 목록
+     * @param filePath   생성할 파일의 경로
+     * @param fileName   생성할 파일의 이름
+     * @param month      데이터의 기준이 되는 월 정보
+     * @param dbData     파일에 기록할 데이터 리스트
+     * @param extension  파일의 확장자 ("xlsx" 또는 "xls")
      */
-    private CellStyle createHeaderCellStyle(Workbook workbook) {
-        CellStyle cellStyle = workbook.createCellStyle();
-        Font boldFont = workbook.createFont();
-        boldFont.setBold(true);
-        boldFont.setFontName("Arial");
-        boldFont.setFontHeightInPoints((short) 10);
-        cellStyle.setFont(boldFont);
-        cellStyle.setBorderTop(BorderStyle.THIN);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setBorderLeft(BorderStyle.THIN);
-        cellStyle.setBorderRight(BorderStyle.THIN);
-        return cellStyle;
-    }
+    public void generateFile(
+            List<String> fileHeader,
+            String filePath,
+            String fileName,
+            String month,
+            List<ExcelColDTO> dbData,
+            String extension
+    ) {
+        try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath));
+             Workbook workbook = "xlsx".equals(extension) ? new SXSSFWorkbook() : new HSSFWorkbook()) {
 
-    /**
-     * xlsx 파일을 생성합니다.
-     *
-     * @param fileheader 파일 헤더 리스트
-     * @param filePath   생성할 파일 경로
-     * @param month      월 정보
-     * @param data       데이터 리스트
-     */
-    public void generate_XLSX_File(List<String> fileheader, String filePath, String month, List<ExcelColDTO> data) {
-        try (Workbook workbook = new SXSSFWorkbook();
-             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath))) {
+            // 시트 및 헤더 생성
+            Sheet sheet = workbook.createSheet("Data");
+            Row headerRow = sheet.createRow(0);
 
-            Sheet sheet = workbook.createSheet("DataSheet");
-            createHeaderRow(fileheader, sheet, workbook);
-            populateDataRows(sheet, month, data);
+            // 헤더 셀 추가
+            for (int i = 0; i < fileHeader.size(); i++) {
+                setCellValueWithBorder(workbook, headerRow.createCell(i), fileHeader.get(i), true);
+            }
+            // 첫 번째 셀에 이전 달 정보 설정
+            String firstTitle = "'" + PreviousMonthConfig.lastMonth_yyyyMM + "'";
+            setCellValueWithBorder(workbook, headerRow.createCell(0), firstTitle, true);
+
+            // 데이터 행 생성 및 각 셀에 데이터와 스타일 적용
+            int rowIndex = 1;
+            for (ExcelColDTO dto : dbData) {
+                Row row = sheet.createRow(rowIndex++);
+                setCellValueWithBorder(workbook, row.createCell(0), month, false);
+                setCellValueWithBorder(workbook, row.createCell(1), dto.getRoad_name(), false);
+                setCellValueWithBorder(workbook, row.createCell(2), dto.getDir_name(), false);
+                setCellValueWithBorder(workbook, row.createCell(3), dto.getSt_name(), false);
+                setCellValueWithBorder(workbook, row.createCell(4), dto.getEd_name(), false);
+                setCellValueWithBorder(workbook, row.createCell(5), dto.getDistance(), false);
+                setCellValueWithBorder(workbook, row.createCell(6), dto.getWeekDay_avg(), false);
+                setCellValueWithBorder(workbook, row.createCell(7), dto.getWeekEnd_avg(), false);
+                setCellValueWithBorder(workbook, row.createCell(8), dto.getAll_avg(), false);
+
+            }
+
+            // 파일 저장
             workbook.write(fileOut);
 
-            log.info("xlsx 파일이 생성되었습니다.");
-        } catch (IOException e) {
-            log.info("xlsx 파일 생성 중 오류가 발생했습니다. {}", e);
-            throw new RuntimeException(e);
-        } catch (IllegalArgumentException e) {
-            log.warn("전달된 데이터가 유효하지 않습니다: {}", e.getMessage());
-            throw e; // 예외를 다시 던져 호출자에게 알림
+            log.info("{} 파일이 생성되었습니다. ", fileName);
+            log.info("------------------------------------------------------------> [ END ]");
+
+        } catch (Exception e) {
+            // 재시도 플래그 설정하여 한 번만 재시도 예약
+            if (retry) {
+                retry = false;
+                log.error("{} 파일 생성 중 오류가 발생하여 5분 뒤에 재시도 합니다. 오류: {}", fileName, e.getMessage());
+                taskScheduler.schedule(
+                        () -> generateFile(fileHeader, filePath, fileName, month, dbData, extension),
+                        PreviousMonthConfig.now_5min
+                );
+                log.info("다음 재시도 시각: {}", PreviousMonthConfig.now_5min);
+            } else {
+                exceptionSender.exceptionSender(fileName, e.getMessage());
+            }
+
         }
     }
 
-    /**
-     * xls 파일을 생성합니다.
-     *
-     * @param fileheader 파일 헤더 리스트
-     * @param filePath   생성할 파일 경로
-     * @param month      월 정보
-     * @param data       데이터 리스트
-     */
-    public void generate_XLS_File(List<String> fileheader, String filePath, String month, List<ExcelColDTO> data) {
-        try (Workbook workbook = new HSSFWorkbook();
-             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath))) {
-
-            Sheet sheet = workbook.createSheet("DataSheet");
-            createHeaderRow(fileheader, sheet, workbook);
-            populateDataRows(sheet, month, data);
-            workbook.write(fileOut);
-
-            log.info("xls 파일이 생성되었습니다.");
-        } catch (IOException e) {
-            throw new RuntimeException("xls 파일 생성 중 오류가 발생했습니다.", e);
-        } catch (IllegalArgumentException e) {
-            log.warn("전달된 데이터가 유효하지 않습니다: {}", e.getMessage());
-            throw e; // 예외를 다시 던져 호출자에게 알림
-        }
-    }
 }
