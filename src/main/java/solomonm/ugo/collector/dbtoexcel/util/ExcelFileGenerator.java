@@ -54,13 +54,16 @@ public class ExcelFileGenerator {
             int rowIndex = 0;
 
             // 헤더와 데이터를 동시에 생성하여 통합된 셀 스타일 적용
-            CellStyle headerStyle = createCellStyle(workbook, true);
-            CellStyle dataStyle = createCellStyle(workbook, false);
+            CellStyle headerStyle = createCellStyle(workbook, true);  // 헤더 스타일 생성
+            CellStyle dataStyle = createCellStyle(workbook, false);  // 데이터 스타일 생성
 
             Row headerRow = sheet.createRow(rowIndex++);
             for (int i = 0; i < fileHeader.size(); i++) {
                 Cell cell = headerRow.createCell(i);
+
+                // 첫 번째 셀에는 특정 날짜 정보 삽입
                 cell.setCellValue(i == 0 ? "'" + PreviousMonthConfig.lastMonth_yyyyMM + "'" : fileHeader.get(i));
+                // 헤더 스타일 적용
                 cell.setCellStyle(headerStyle);
             }
 
@@ -68,9 +71,16 @@ public class ExcelFileGenerator {
             for (ExcelColDTO dto : dbData) {
                 Row dataRow = sheet.createRow(rowIndex++);
                 int colIndex = 0;
-                for (Object value : Arrays.asList(month, dto.getRoad_name(), dto.getDir_name(), dto.getSt_name(), dto.getEd_name(),
-                        dto.getDistance(), dto.getWeekDay_avg(), dto.getWeekEnd_avg(), dto.getAll_avg())) {
+
+                // 데이터 값들을 셀에 삽입
+                for (Object value :
+                        Arrays.asList(
+                                month, dto.getRoad_name(), dto.getDir_name(), dto.getSt_name(), dto.getEd_name(),
+                                dto.getDistance(), dto.getWeekDay_avg(), dto.getWeekEnd_avg(), dto.getAll_avg())
+                ) {
                     Cell cell = dataRow.createCell(colIndex++);
+
+                    // 데이터 값에 따라 셀 값 설정
                     if (value instanceof Number) {
                         cell.setCellValue(((Number) value).doubleValue());
                     } else {
@@ -87,16 +97,20 @@ public class ExcelFileGenerator {
             log.info("------------------------------------------------------------> [ END ]");
 
         } catch (Exception e) {
+
             // 재시도 플래그 설정하여 한 번만 재시도 예약
             if (retry) {
-                retry = false;
+                retry = false;  // 재시도 수행이 되지 않게 설정
                 log.error("{} 파일 생성 중 오류가 발생하여 5분 뒤에 재시도 합니다. 오류: {}", fileName, e.getMessage());
+
+                // 재시도 예약
                 taskScheduler.schedule(
                         () -> generateFile(fileHeader, filePath, fileName, month, dbData, extension),
-                        PreviousMonthConfig.now_5min
+                        PreviousMonthConfig.now_5min // 5분 후 재시도
                 );
                 log.info("다음 재시도 시각: {}", PreviousMonthConfig.now_5min);
             } else {
+                // 재시도 후에도 실패 시 예외를 메일로 전송
                 String title = fileName + " 파일 생성 실패";
                 exceptionSender.exceptionSender(title, e.getMessage());
             }

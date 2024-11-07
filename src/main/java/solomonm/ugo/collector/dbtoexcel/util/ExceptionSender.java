@@ -36,6 +36,7 @@ public class ExceptionSender {
     @Value("${exception-sender.message.delivery-type}")
     private String deliveryType;
 
+    // ObjectMapper를 생성자로 주입받아 JSON 변환에 사용
     ExceptionSender(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
@@ -45,7 +46,8 @@ public class ExceptionSender {
      * 예외 메시지를 JSON 형식으로 변환하고 지정된 URL로 전송합니다.
      * 실패 시 지정된 횟수만큼 재시도합니다.
      *
-     * @param content 전송할 예외 메시지 내용
+     * @param title   메시지 제목
+     * @param content 메시지 내용
      */
     public void exceptionSender(String title, String content) {
         try {
@@ -64,6 +66,7 @@ public class ExceptionSender {
 
             // 최대 재시도 횟수만큼 전송 시도
             for (int attempt = 1; attempt <= maxRetryCount; attempt++) {
+                // 메시지 전송이 성공하면 메서드를 종료
                 if (sendMessage(jsonInputString)) {
                     log.info("Message sent successfully on attempt {}", attempt);
                     return;
@@ -82,25 +85,30 @@ public class ExceptionSender {
      * JSON 메시지를 지정된 URL로 전송하는 메서드입니다.
      *
      * @param jsonInputString 전송할 JSON 형식 메시지
-     * @return 성공 여부
+     * @return 전송 공 여부
      */
     private boolean sendMessage(String jsonInputString) {
         try {
+            // 지정된 URL로 HTTP 연결을 설정
             URL url = new URL(exceptionUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setConnectTimeout(connectionTimeoutMs);
+            connection.setRequestMethod("POST");                               // POST 방식으로 요청
+            connection.setDoOutput(true);                                      // 요청 본문에 데이터를 담기 위해 true 설정
+            connection.setRequestProperty("Content-Type", "application/json"); // Content-Type 설정
+            connection.setConnectTimeout(connectionTimeoutMs);                 // 연결 타임아웃 설정
 
+            // 요청 본문에 JSON 메시지 작성
             try (OutputStream os = connection.getOutputStream()) {
                 os.write(jsonInputString.getBytes(StandardCharsets.UTF_8));
                 os.flush();
             }
 
+            // 응답 코드 확인
             int responseCode = connection.getResponseCode();
             if (responseCode < 300) {
                 log.info("Response Code: {}", responseCode);
+
+                // 응답 본문 읽기
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     StringBuilder response = new StringBuilder();
                     String inputLine;
