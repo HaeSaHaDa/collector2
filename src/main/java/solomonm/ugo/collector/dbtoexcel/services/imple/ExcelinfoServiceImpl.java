@@ -9,6 +9,7 @@ import solomonm.ugo.collector.dbtoexcel.services.ExcelInfoService;
 import solomonm.ugo.collector.dbtoexcel.util.ExcelFileGenerator;
 import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 
+import java.time.Instant;
 import java.util.List;
 
 
@@ -45,7 +46,7 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
      */
     @Transactional
     @Override
-    public void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileName, String extension) {
+    public void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileName, String extension, Instant fileRegenTime) {
         try {
             excelFileGenerator.generateFile(
                     fileheader,
@@ -53,7 +54,8 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
                     fileName,
                     PreviousMonthConfig.lastMonth_yyyyMM,
                     dbData,
-                    extension
+                    extension,
+                    fileRegenTime
             );
         } catch (
                 Exception e) {

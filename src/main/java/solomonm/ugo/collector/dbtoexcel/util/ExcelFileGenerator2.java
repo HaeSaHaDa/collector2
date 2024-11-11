@@ -12,6 +12,7 @@ import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -92,7 +93,8 @@ public class ExcelFileGenerator2 {
             String fileName,
             String month,
             List<ExcelColDTO> dbData,
-            String extension
+            String extension,
+            Instant fileRegenTime
     ) {
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath));
              Workbook workbook = "xlsx".equals(extension) ? new SXSSFWorkbook() : new HSSFWorkbook()) {
@@ -137,10 +139,10 @@ public class ExcelFileGenerator2 {
                 retry = false;
                 log.error("{} 파일 생성 중 오류가 발생하여 5분 뒤에 재시도 합니다. 오류: {}", fileName, e.getMessage());
                 taskScheduler.schedule(
-                        () -> generateFile(fileHeader, filePath, fileName, month, dbData, extension),
-                        PreviousMonthConfig.now_5min
+                        () -> generateFile(fileHeader, filePath, fileName, month, dbData, extension, fileRegenTime),
+                        fileRegenTime
                 );
-                log.info("다음 재시도 시각: {}", PreviousMonthConfig.now_5min);
+                log.info("다음 재시도 시각: {}", fileRegenTime);
             } else {
                 exceptionSender.exceptionSender(fileName, e.getMessage());
             }

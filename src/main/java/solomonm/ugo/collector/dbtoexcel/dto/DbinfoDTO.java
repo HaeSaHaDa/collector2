@@ -14,7 +14,7 @@ public class DbinfoDTO {
     private String ed_name;
     private Float distance;
     private Double speed;
-    private Integer road_idx;
+    private Integer road_idx ;
     private Integer link_idx;
     private Integer axis_idx;
 

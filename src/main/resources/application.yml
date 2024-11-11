@@ -15,13 +15,12 @@ filegen:
   file-name: 연간월평균
   file-extension: xls
   file-header: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
+  file-regen-time: 5
 exception-sender:
-  connector:
-    url: http://192.168.0.111:14766/api/notifications
-    max-retry-count: 3      # 최대 재시도 횟수
-    retry-delay-ms: 2000    # 재시도 대기 시간 (밀리초)
-    connection-timeout-ms: 5000  # 연결 타임아웃 시간 (밀리초)
-  message:
-    sender: solomonm3@solomonm.co.kr
-    recipients: -1002166045687
-    delivery-type: TELEGRAM  # TELEGRAM,EMAIL
+  url: http://192.168.0.111:14766/api/notifications
+  max-retry-count: 3      # 최대 재시도 횟수
+  retry-delay-ms: 2000    # 재시도 대기 시간 (밀리초)
+  connection-timeout-ms: 5000  # 연결 타임아웃 시간 (밀리초)
+  sender: solomonm3@solomonm.co.kr
+  recipients: -1002166045687  # TELEGRAM으로 연락 시 Chat ID입력, EMAIL 연락 시 EMAIL 주소 입력, 여러개 입력시 콤마로 구분
+  delivery-type: TELEGRAM  # TELEGRAM,EMAIL

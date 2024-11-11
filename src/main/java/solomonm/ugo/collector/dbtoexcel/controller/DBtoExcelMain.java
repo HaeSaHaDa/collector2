@@ -2,16 +2,17 @@ package solomonm.ugo.collector.dbtoexcel.controller;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
+import solomonm.ugo.collector.dbtoexcel.config.FileGenConfig;
+import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 import solomonm.ugo.collector.dbtoexcel.services.ExcelInfoService;
-import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 
 import java.io.File;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -20,23 +21,32 @@ import java.util.List;
 public class DBtoExcelMain implements ApplicationRunner {
 
     private final ExcelInfoService excelInfoService;
+    private final FileGenConfig fileGenConfig;
 
-    @Value("${filegen.file-path}")
+//    @Value("${filegen.file-path}")
     String filepath;
-    @Value("${filegen.file-name}")
+//    @Value("${filegen.file-name}")
     String filename;
-    @Value("${filegen.file-extension}")
+//    @Value("${filegen.file-extension}")
     String fileExtension;
-    @Value("${filegen.file-header}")
+//    @Value("${filegen.file-header}")
     List<String> fileheader;
+//    @Value("${filegen.file-regen-time}")
+    Instant fileRegenTime = Instant.ofEpochSecond(5);
 
-    public DBtoExcelMain(ExcelInfoService excelInfoService) {
+    public DBtoExcelMain(ExcelInfoService excelInfoService, FileGenConfig fileGenConfig) {
         this.excelInfoService = excelInfoService;
+        this.fileGenConfig = fileGenConfig;
+        filepath = fileGenConfig.getFilePath();
+        filename = fileGenConfig.getFileName();
+        fileExtension = fileGenConfig.getFileExtension();
+        fileheader = fileGenConfig.getFileHeader();
+
     }
 
     private String prepareFilePath() {
         return String.format("%s%s%s%s월.%s",
-                filepath,
+                fileGenConfig,
                 File.separator,
                 filename,
                 PreviousMonthConfig.lastMonth_MM,
@@ -66,7 +76,7 @@ public class DBtoExcelMain implements ApplicationRunner {
         dbData = excelInfoService.selectData();
 
         if (validateData(dbData)) {
-            excelInfoService.fileMake(fileheader, dbData, filePath, fileName, fileExtension);
+            excelInfoService.fileMake(fileheader, dbData, filePath, fileName, fileExtension, fileRegenTime);
         }else{
             log.warn("데이터가 존재하지 않습니다.");
         }
