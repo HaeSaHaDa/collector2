@@ -17,20 +17,20 @@ import java.nio.charset.StandardCharsets;
 @Component
 @PropertySource(value = "classpath:application.yml", encoding = "UTF-8")
 class ExceptionSender3 {
-    @Value("${exception-sender.connector.url}")
+    @Value("${exception-sender.url}")
     private String exceptionUrl;
-    @Value("${exception-sender.connector.max-retry-count}")
+    @Value("${exception-sender.max-retry-count}")
     private int maxRetryCount;
-    @Value("${exception-sender.connector.retry-delay-ms}")
+    @Value("${exception-sender.retry-delay-ms}")
     private int retryDelayMs;
-    @Value("${exception-sender.connector.connection-timeout-ms}")
+    @Value("${exception-sender.connection-timeout-ms}")
     private int connectionTimeoutMs;
-    @Value("${exception-sender.message.sender}")
+    @Value("${exception-sender.sender}")
     private String sender;
-    @Value("${exception-sender.message.recipients}")
+    @Value("${exception-sender.recipients}")
     private String[] recipients;
     private String title = "123";
-    @Value("${exception-sender.message.delivery-type}")
+    @Value("${exception-sender.delivery-type}")
     private String deliveryType;
 
     /**

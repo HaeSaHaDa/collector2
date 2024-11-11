@@ -21,19 +21,19 @@ import java.util.List;
 public class ExceptionSender {
     private final ObjectMapper objectMapper;
 
-    @Value("${exception-sender.connector.url}")
+    @Value("${exception-sender.url}")
     private String exceptionUrl;
-    @Value("${exception-sender.connector.max-retry-count}")
+    @Value("${exception-sender.max-retry-count}")
     private int maxRetryCount;
-    @Value("${exception-sender.connector.retry-delay-ms}")
+    @Value("${exception-sender.retry-delay-ms}")
     private int retryDelayMs;
-    @Value("${exception-sender.connector.connection-timeout-ms}")
+    @Value("${exception-sender.connection-timeout-ms}")
     private int connectionTimeoutMs;
-    @Value("${exception-sender.message.sender}")
+    @Value("${exception-sender.sender}")
     private String sender;
-    @Value("${exception-sender.message.recipients}")
+    @Value("${exception-sender.recipients}")
     private List<Object> recipients;
-    @Value("${exception-sender.message.delivery-type}")
+    @Value("${exception-sender.delivery-type}")
     private String deliveryType;
 
     // ObjectMapper를 생성자로 주입받아 JSON 변환에 사용
