@@ -11,8 +11,11 @@ import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,7 +34,9 @@ public class ExcelFileGenerator {
     }
 
     /**
-     * 주어진 데이터를 기반으로 Excel 파일을 생성하는 메서드입니다. 실패 시 다시 한 번 재시도한 후 생성이 불가능하면 exception에 대해 메일을 발송합니다.
+     * 주어진 데이터를 기반으로 Excel 파일을 생성하는 메서드입니다.
+     * 넘겨받은 extension에 따라 Workbook() 객체 생성을 달리합니다.(xlsx: SXSSFWorkbook/ xls,cell: HSSFWorkbook)
+     * 실패 시 다시 한 번 재시도한 후 생성이 불가능하면 exception에 대해 메일을 발송합니다.
      *
      * @param fileHeader Excel 파일의 헤더 목록
      * @param filePath   생성할 파일의 경로
@@ -47,7 +52,7 @@ public class ExcelFileGenerator {
             String month,
             List<ExcelColDTO> dbData,
             String extension,
-            Instant fileRegenTime
+            int fileRegenTime
     ) {
         try (BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(filePath));
              Workbook workbook = "xlsx".equals(extension) ? new SXSSFWorkbook() : new HSSFWorkbook()) {
@@ -101,21 +106,30 @@ public class ExcelFileGenerator {
 
         } catch (Exception e) {
 
+            Instant fileRegenTimeInst = Instant.now().plusSeconds(fileRegenTime);
+            ZonedDateTime localDateTime = fileRegenTimeInst.atZone(ZoneId.systemDefault());
+
             // 재시도 플래그 설정하여 한 번만 재시도 예약
             if (retry) {
                 retry = false;  // 재시도 수행이 되지 않게 설정
                 log.error("{} 파일 생성 중 오류가 발생하여 5분 뒤에 재시도 합니다. 오류: {}", fileName, e.getMessage());
-
+                log.info("다음 재시도 시각: {}", localDateTime);
                 // 재시도 예약
                 taskScheduler.schedule(
                         () -> generateFile(fileHeader, filePath, fileName, month, dbData, extension, fileRegenTime),
-                        fileRegenTime // 5분 후 재시도
+                        fileRegenTimeInst // 5분 후 재시도
                 );
-                log.info("다음 재시도 시각: {}", fileRegenTime);
+
             } else {
                 // 재시도 후에도 실패 시 예외를 메일로 전송
                 String title = fileName + " 파일 생성 실패";
-                exceptionSender.exceptionSender(title, e.getMessage());
+                String content = String.format("%s%s%s \n -> %s",
+                        "다음과 같은 이유로 [ ",
+                        fileName,
+                        " ] 파일 생성에 실패했습니다.",
+                        e.getMessage()
+                );
+                exceptionSender.exceptionSender(title, content);
             }
 
         }

@@ -1,10 +1,16 @@
 package solomonm.ugo.collector.dbtoexcel.config;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.List;
 
 @Data
 @Validated
+@ConfigurationProperties(prefix = "exception-sender")
+@Configuration
 public class ExceptionConfig {
 
     /**
@@ -22,6 +28,6 @@ public class ExceptionConfig {
     private int retryDelayMs;
     private int connectionTimeoutMs;
     private String sender;
-    private long recipients;
+    private List<Object> recipients;
     private String deliveryType;
 }

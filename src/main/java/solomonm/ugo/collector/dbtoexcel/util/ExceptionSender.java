@@ -2,9 +2,8 @@ package solomonm.ugo.collector.dbtoexcel.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
+import solomonm.ugo.collector.dbtoexcel.config.ExceptionConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.MailDTO;
 
 import java.io.BufferedReader;
@@ -17,28 +16,31 @@ import java.util.List;
 
 @Slf4j
 @Component
-@PropertySource(value = "classpath:application.yml", encoding = "UTF-8")
 public class ExceptionSender {
     private final ObjectMapper objectMapper;
+    private final ExceptionConfig exceptionConfig;
 
-    @Value("${exception-sender.url}")
     private String exceptionUrl;
-    @Value("${exception-sender.max-retry-count}")
     private int maxRetryCount;
-    @Value("${exception-sender.retry-delay-ms}")
     private int retryDelayMs;
-    @Value("${exception-sender.connection-timeout-ms}")
     private int connectionTimeoutMs;
-    @Value("${exception-sender.sender}")
     private String sender;
-    @Value("${exception-sender.recipients}")
     private List<Object> recipients;
-    @Value("${exception-sender.delivery-type}")
     private String deliveryType;
 
     // ObjectMapper를 생성자로 주입받아 JSON 변환에 사용
-    ExceptionSender(ObjectMapper objectMapper) {
+    ExceptionSender(ObjectMapper objectMapper, ExceptionConfig exceptionConfig) {
         this.objectMapper = objectMapper;
+        this.exceptionConfig = exceptionConfig;
+
+
+        exceptionUrl = exceptionConfig.getUrl();
+        maxRetryCount = exceptionConfig.getMaxRetryCount();
+        retryDelayMs = exceptionConfig.getRetryDelayMs();
+        connectionTimeoutMs = exceptionConfig.getConnectionTimeoutMs();
+        sender = exceptionConfig.getSender();
+        recipients = exceptionConfig.getRecipients();
+        deliveryType = exceptionConfig.getDeliveryType();
     }
 
 

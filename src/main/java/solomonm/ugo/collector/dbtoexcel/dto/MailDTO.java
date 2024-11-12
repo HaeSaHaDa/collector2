@@ -18,17 +18,13 @@ public class MailDTO {
     @NotBlank
     @Email(message = "Sender" + MessageConstant.VALID_ERROR)
     private String sender;
-
     @NotBlank
     @Email(message = "Recipient" + MessageConstant.VALID_ERROR)
     private List<Object> recipients;
-
     @NotBlank(message = "Title" + MessageConstant.BLANK_ERROR)
     private String title;
-
     @NotBlank(message = "Content" + MessageConstant.BLANK_ERROR)
     private String content;
-
     @NotBlank(message = "Delivery type" + MessageConstant.BLANK_ERROR)
     private String deliveryType;
 }

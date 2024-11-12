@@ -25,4 +25,5 @@ public class FileGenConfig {
     private String fileName;
     private String fileExtension;
     private List<String> fileHeader;
+    private int fileRegenTime;
 }

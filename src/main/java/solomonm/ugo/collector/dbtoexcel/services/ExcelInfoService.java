@@ -8,7 +8,7 @@ import java.util.List;
 public interface ExcelInfoService {
 
     List<ExcelColDTO> selectData();
-
-    void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileNmae, String extension, Instant fileRegenTime);
+    void fileMake();
+//    void fileMake(List<String> fileheader, List<ExcelColDTO> dbData, String filePath, String fileNmae, String extension, Instant fileRegenTime);
 
 }
