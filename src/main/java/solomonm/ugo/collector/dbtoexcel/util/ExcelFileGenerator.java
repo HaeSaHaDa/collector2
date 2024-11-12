@@ -11,7 +11,6 @@ import solomonm.ugo.collector.dbtoexcel.config.PreviousMonthConfig;
 import solomonm.ugo.collector.dbtoexcel.dto.ExcelColDTO;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.time.Instant;
 import java.time.ZoneId;

@@ -4,7 +4,6 @@ package solomonm.ugo.collector.dbtoexcel.main;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import solomonm.ugo.collector.dbtoexcel.services.ExcelInfoService;
 
