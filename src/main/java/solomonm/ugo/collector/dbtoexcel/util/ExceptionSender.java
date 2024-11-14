@@ -18,21 +18,18 @@ import java.util.List;
 @Component
 public class ExceptionSender {
     private final ObjectMapper objectMapper;
-    private final ExceptionConfig exceptionConfig;
 
-    private String exceptionUrl;
-    private int maxRetryCount;
-    private int retryDelayMs;
-    private int connectionTimeoutMs;
-    private String sender;
-    private List<Object> recipients;
-    private String deliveryType;
+    private final String exceptionUrl;
+    private final int maxRetryCount;
+    private final int retryDelayMs;
+    private final int connectionTimeoutMs;
+    private final String sender;
+    private final List<Object> recipients;
+    private final String deliveryType;
 
     // ObjectMapper를 생성자로 주입받아 JSON 변환에 사용
     ExceptionSender(ObjectMapper objectMapper, ExceptionConfig exceptionConfig) {
         this.objectMapper = objectMapper;
-        this.exceptionConfig = exceptionConfig;
-
 
         exceptionUrl = exceptionConfig.getUrl();
         maxRetryCount = exceptionConfig.getMaxRetryCount();
@@ -42,11 +39,6 @@ public class ExceptionSender {
         recipients = exceptionConfig.getRecipients();
         deliveryType = exceptionConfig.getDeliveryType();
     }
-
-//
-//    public void exceptionRetry(boolean retry, ){
-//
-//    }
 
     /**
      * 예외 메시지를 JSON 형식으로 변환하고 지정된 URL로 전송합니다.
@@ -130,7 +122,7 @@ public class ExceptionSender {
                     while ((inputLine = in.readLine()) != null) {
                         response.append(inputLine);
                     }
-                    log.info("Response: {}", response.toString());
+                    log.info("Response: {}", response);
                 }
                 return true;  // 성공적으로 전송됨
             }

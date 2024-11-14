@@ -25,16 +25,14 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
 
     private final ExcelInfoMapper excelInfoMapper;
     private final ExcelFileGenerator excelFileGenerator;
-    private final FileGenConfig fileGenConfig;
     private final ExceptionSender exceptionSender;
     private final TaskScheduler taskScheduler;
     private boolean retry = true; // 재시도 플래그를 처음에는 true로 설정
-
-    private String filePath;
-    private String fileName;
-    private String fileExtension;
-    private List<String> fileheader;
-    private int fileRegenTime;
+    private final  String filePath;
+    private final String fileName;
+    private final String fileExtension;
+    private final List<String> fileheader;
+    private final int fileRegenTime;
 
 
     /**
@@ -49,7 +47,8 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
     public ExcelinfoServiceImpl(ExcelInfoMapper excelInfoMapper, ExcelFileGenerator excelFileGenerator, FileGenConfig fileGenConfig, ExceptionSender exceptionSender, TaskScheduler taskScheduler) {
         this.excelInfoMapper = excelInfoMapper;
         this.excelFileGenerator = excelFileGenerator;
-        this.fileGenConfig = fileGenConfig;
+        this.exceptionSender = exceptionSender;
+        this.taskScheduler = taskScheduler;
 
         // 설정값을 인스턴스 변수에 저장
         filePath = fileGenConfig.getFilePath();
@@ -57,8 +56,6 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
         fileName = fileGenConfig.getFileName() + PreviousMonthConfig.lastMonth_MM + "월." + fileExtension;
         fileheader = fileGenConfig.getFileHeader();
         fileRegenTime = fileGenConfig.getFileRegenTime();
-        this.exceptionSender = exceptionSender;
-        this.taskScheduler = taskScheduler;
     }
 
     /**
@@ -131,7 +128,7 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
                 log.info("다음 재시도 시각: {}", localDateTime);
                 // 재시도 예약
                 taskScheduler.schedule(
-                        () -> fileMake(),
+                        this::fileMake,
                         fileRegenTimeInst // 5분 후 재시도
                 );
             } else {

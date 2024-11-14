@@ -26,7 +26,7 @@ import java.util.stream.IntStream;
 public class ExcelFileGenerator {
     private final ExceptionSender exceptionSender;
     private final TaskScheduler taskScheduler;
-    private boolean retry = true; // 재시도 플래그를 처음에는 true로 설정
+    private boolean retry = true; // 재시도 플래그를 처음에는 'true'로 설정
 
 
     public ExcelFileGenerator(ExceptionSender exceptionSender, TaskScheduler taskScheduler) {
@@ -60,13 +60,12 @@ public class ExcelFileGenerator {
 
             // 시트 및 헤더 생성
             Sheet sheet = workbook.createSheet("Data");
-            int rowIndex = 0;
 
             // 헤더와 데이터를 동시에 생성하여 통합된 셀 스타일 적용
             CellStyle headerStyle = createCellStyle(workbook, true);  // 헤더 스타일 생성
             CellStyle dataStyle = createCellStyle(workbook, false);  // 데이터 스타일 생성
 
-            Row headerRow = sheet.createRow(rowIndex++);
+            Row headerRow = sheet.createRow(0);
             for (int i = 0; i < fileHeader.size(); i++) {
                 Cell cell = headerRow.createCell(i);
 
