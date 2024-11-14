@@ -16,12 +16,13 @@ public class DBtoExcelMain implements ApplicationRunner {
         this.excelInfoService = excelInfoService;
     }
 
-    @Scheduled(cron = "${filegen.filegen-cron}")
+//    @Scheduled(cron = "${filegen.filegen-cron}")
     public void start() {
-        excelInfoService.fileMake();
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        excelInfoService.fileMake();
+
     }
 }

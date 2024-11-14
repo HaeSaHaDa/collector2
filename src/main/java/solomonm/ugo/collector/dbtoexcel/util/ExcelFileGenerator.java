@@ -101,7 +101,7 @@ public class ExcelFileGenerator {
             Integer[] headerSize = {7, 23, 10, 21, 21, 9, 13, 13, 13};
 
             for (int i = 0; i < headerSize.length; i++) {
-                sheet.setColumnWidth(i, (headerSize[i]*256)); // 너비 조정 (단위: 1/256th of a character width)
+                sheet.setColumnWidth(i, (headerSize[i] * 256)); // 너비 조정 (단위: 1/256th of a character width)
             }
 
             // 파일 저장
@@ -128,14 +128,8 @@ public class ExcelFileGenerator {
 
             } else {
                 // 재시도 후에도 실패 시 예외를 메일로 전송
-                String title = fileName + " 파일 생성 실패";
-                String content = String.format("%s%s%s \n -> %s",
-                        "다음과 같은 이유로 [ ",
-                        fileName,
-                        " ] 파일 생성에 실패했습니다.",
-                        e.getMessage()
-                );
-                exceptionSender.exceptionSender(title, content);
+                String content = e.getMessage();
+                exceptionSender.exceptionSender(fileName, content);
             }
 
         }
@@ -168,4 +162,6 @@ public class ExcelFileGenerator {
         style.setBorderRight(BorderStyle.THIN);
         return style;
     }
+
+
 }

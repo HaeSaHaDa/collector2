@@ -43,16 +43,29 @@ public class ExceptionSender {
         deliveryType = exceptionConfig.getDeliveryType();
     }
 
+//
+//    public void exceptionRetry(boolean retry, ){
+//
+//    }
 
     /**
      * 예외 메시지를 JSON 형식으로 변환하고 지정된 URL로 전송합니다.
      * 실패 시 지정된 횟수만큼 재시도합니다.
      *
-     * @param title   메시지 제목
-     * @param content 메시지 내용
+     * @param fileName   exception메일  title 작성에 사용.
+     * @param errorContents  exception메일  content 작성에 사용.
      */
-    public void exceptionSender(String title, String content) {
+    public void exceptionSender(String fileName, String errorContents) {
         try {
+
+            String title = fileName + " 파일 생성 실패";
+            String content = String.format("%s%s%s \n -> %s",
+                    "다음과 같은 이유로 [ ",
+                    fileName,
+                    " ] 파일 생성에 실패했습니다.",
+                    errorContents
+            );
+
             // MailDTO 생성 및 JSON 직렬화
             String jsonInputString = objectMapper.writeValueAsString(
                     MailDTO.builder()
@@ -126,4 +139,6 @@ public class ExceptionSender {
         }
         return false;
     }
+
+
 }
