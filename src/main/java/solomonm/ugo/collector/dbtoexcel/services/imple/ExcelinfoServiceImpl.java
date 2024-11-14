@@ -81,6 +81,7 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
     @Transactional
     @Override
     public void fileMake() {
+        log.info("---------------------------------------------------------> [ START ]");
         try {
 
             // 파일 이름 및 경로 설정
@@ -136,5 +137,6 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
                 exceptionSender.exceptionSender(fileName, content);
             }
         }
+        log.info("------------------------------------------------------------> [ END ]");
     }
 }

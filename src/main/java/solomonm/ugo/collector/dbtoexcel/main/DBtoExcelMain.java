@@ -22,9 +22,7 @@ public class DBtoExcelMain implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info("---------------------------------------------------------> [ START ]");
         excelInfoService.fileMake();
-        log.info("------------------------------------------------------------> [ END ]");
 
     }
 }
