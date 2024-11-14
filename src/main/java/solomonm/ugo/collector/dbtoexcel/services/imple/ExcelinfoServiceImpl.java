@@ -82,7 +82,6 @@ public class ExcelinfoServiceImpl implements ExcelInfoService {
     @Override
     public void fileMake() {
         try {
-            log.info("---------------------------------------------------------> [ START ]");
 
             // 파일 이름 및 경로 설정
             String filepath = String.format("%s%s%s",

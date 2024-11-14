@@ -107,7 +107,6 @@ public class ExcelFileGenerator {
             workbook.write(fileOut);
 
             log.info("{} 파일이 생성되었습니다. ", fileName);
-            log.info("------------------------------------------------------------> [ END ]");
 
         } catch (Exception e) {
 
