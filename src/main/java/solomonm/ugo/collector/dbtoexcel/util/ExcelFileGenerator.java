@@ -17,6 +17,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Component
@@ -75,26 +77,31 @@ public class ExcelFileGenerator {
             }
 
             // 데이터 행 생성 및 각 셀에 데이터와 스타일 적용
-            for (ExcelColDTO dto : dbData) {
-                Row dataRow = sheet.createRow(rowIndex++);
-                int colIndex = 0;
+            AtomicInteger rowIndex2 = new AtomicInteger(1);
+            dbData.forEach(dto -> {
+                Row dataRow = sheet.createRow(rowIndex2.getAndIncrement());
+                List<Object> values = Arrays.asList(
+                        month, dto.getRoad_name(), dto.getDir_name(), dto.getSt_name(), dto.getEd_name(),
+                        dto.getDistance(), dto.getWeekDay_avg(), dto.getWeekEnd_avg(), dto.getAll_avg()
+                );
 
-                // 데이터 값들을 셀에 삽입
-                for (Object value :
-                        Arrays.asList(
-                                month, dto.getRoad_name(), dto.getDir_name(), dto.getSt_name(), dto.getEd_name(),
-                                dto.getDistance(), dto.getWeekDay_avg(), dto.getWeekEnd_avg(), dto.getAll_avg())
-                ) {
-                    Cell cell = dataRow.createCell(colIndex++);
+                IntStream.range(0, values.size()).forEach(colIndex -> {
+                    Cell cell = dataRow.createCell(colIndex);
+                    Object value = values.get(colIndex);
 
-                    // 데이터 값에 따라 셀 값 설정
                     if (value instanceof Number) {
                         cell.setCellValue(((Number) value).doubleValue());
                     } else {
                         cell.setCellValue(value == null ? "" : value.toString());
                     }
                     cell.setCellStyle(dataStyle);
-                }
+                });
+            });
+
+            Integer[] headerSize = {7, 23, 10, 21, 21, 9, 13, 13, 13};
+
+            for (int i = 0; i < headerSize.length; i++) {
+                sheet.setColumnWidth(i, (headerSize[i]*256)); // 너비 조정 (단위: 1/256th of a character width)
             }
 
             // 파일 저장
@@ -144,11 +151,16 @@ public class ExcelFileGenerator {
     private CellStyle createCellStyle(Workbook workbook, boolean isHeader) {
         CellStyle style = workbook.createCellStyle();
         if (isHeader) {
-            Font boldFont = workbook.createFont();
-            boldFont.setBold(true);
-            boldFont.setFontName("Arial");
-            boldFont.setFontHeightInPoints((short) 10);
-            style.setFont(boldFont);
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontName("Arial");
+            headerFont.setFontHeightInPoints((short) 10);
+            style.setFont(headerFont);
+        } else {
+            Font bodyFont = workbook.createFont();
+            bodyFont.setFontName("맑은고딕");
+            bodyFont.setFontHeightInPoints((short) 11);
+            style.setFont(bodyFont);
         }
         style.setBorderTop(BorderStyle.THIN);
         style.setBorderBottom(BorderStyle.THIN);

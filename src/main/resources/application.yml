@@ -2,9 +2,9 @@ spring:
   application:
     name: collector
   datasource:
-    url: jdbc:mariadb://localhost:3306/test_collect
-    username: collector
-    password: 6382
+    url: jdbc:mariadb://nas.solomonm.co.kr:14760/seocho?serverTimezone=UTC&characterEncoding=UTF-8&verifyServerCertificate=false&useSSL=false
+    username: seocho
+    password: Seocho129!1
     driver-class-name: org.mariadb.jdbc.Driver
 mybatis:
   mapper-locations: classpath:mapper/**/*.xml
@@ -15,7 +15,7 @@ filegen:
   file-name: 연간월평균
   file-extension: xls
   file-header: MONTH, ROAD_NAME, DIR_NAME, ST_NAME, ED_NAME, DISTANCE, 평일평균, 주말평균, 전체평균
-  file-regen-time: 5 # 파일 생성 재시도 시간(초)
+  file-regen-time: 300 # 파일 생성 재시도 시간(초)
   filegen-cron: "0 */3 * * * *"
 exception-sender:
   url: http://192.168.0.111:14766/api/notifications
@@ -23,5 +23,5 @@ exception-sender:
   retry-delay-ms: 2000    # 재시도 대기 시간 (밀리초)
   connection-timeout-ms: 5000  # 연결 타임아웃 시간 (밀리초)
   sender: solomonm3@solomonm.co.kr
-  recipients: sixthgkrsus@naver.com  # TELEGRAM으로 연락 시 Chat ID입력, EMAIL 연락 시 EMAIL 주소 입력, 여러개 입력시 콤마로 구분
+  recipients: sixthgkrsus@solomonm.co.kr  # TELEGRAM으로 연락 시 Chat ID입력, EMAIL 연락 시 EMAIL 주소 입력, 여러개 입력시 콤마로 구분
   delivery-type: EMAIL  # TELEGRAM/EMAIL
